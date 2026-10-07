@@ -385,10 +385,22 @@ class TestGameEngineIntegration(unittest.TestCase):
 
         # All 16 skills should exist
         expected_skills = [
-            "Logic", "Rhetoric", "Encyclopedia", "Conceptualization",
-            "Volition", "Inland Empire", "Empathy", "Suggestion",
-            "Endurance", "Pain Threshold", "Physical Instrument", "Perception",
-            "Hand-Eye Coordination", "Reflexes", "Composure", "Savvy",
+            "Logic",
+            "Rhetoric",
+            "Encyclopedia",
+            "Conceptualization",
+            "Volition",
+            "Inland Empire",
+            "Empathy",
+            "Suggestion",
+            "Endurance",
+            "Pain Threshold",
+            "Physical Instrument",
+            "Perception",
+            "Hand-Eye Coordination",
+            "Reflexes",
+            "Composure",
+            "Savvy",
         ]
         for skill in expected_skills:
             self.assertIn(skill, engine.skills.skills)

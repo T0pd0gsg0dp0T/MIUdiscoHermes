@@ -47,7 +47,7 @@ addopts = "-v --tb=short"
 [tool.black]
 line-length = 100
 target-version = ['py310']
-include = '\\.pyi?$'
+include = '\.pyi?$'
 
 [tool.ruff]
 line-length = 100
