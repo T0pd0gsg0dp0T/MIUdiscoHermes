@@ -1,0 +1,74 @@
+{
+  "metadata": {
+    "title": "Malice in Underland",
+    "version": "0.1.0",
+    "description": "World data for MIUdiscoHermes - A Disco Elysium inspired surreal RPG",
+    "author": "MIUdiscoHermes Project"
+  },
+  "entries": {
+    "1": {
+      "key": ["Underland", "Starting Realm"],
+      "content": "The Realm of Underland stretches beneath the surface world, a vast subterranean expanse where the laws of physics bend to the weight of collective unconscious. Bioluminescent fungi cast pale light upon streets of compressed bone and forgotten memories. The air tastes of copper and old parchment. This is where all lost things eventually arrive — including you."
+    },
+    "2": {
+      "key": ["The Bazaar of Whispers", "Market District", "Location"],
+      "content": "A Location of impossible geometry where merchants trade in secrets, regrets, and half-remembered promises. Stalls fold into themselves like origami. A vendor with three eyes sells bottled childhood memories; another offers futures that never came to pass. The currency here is not coin but conviction — what you believe strongly enough becomes real."
+    },
+    "3": {
+      "key": ["The Archive of Unwritten Histories", "Library", "Location"],
+      "content": "An infinite Library where books write themselves in real-time, chronicling lives that never happened. The shelves breathe. Each volume contains a possible version of your story — the version where you said yes, the version where you stayed, the version where you were brave. The Librarian, a entity of living ink and parchment, watches without eyes. Reading your own unwritten history requires a Conceptualization check."
+    },
+    "4": {
+      "key": ["The Court of Echoes", "Noble District", "Location"],
+      "content": "A Geographic anomaly where every sound ever made in Underland reverberates eternally. The nobility here are not people but concentrated regrets given form and title. They speak only in the voices of those who wronged them. To navigate the Court, one must distinguish truth from echo — a Perception challenge. The throne sits empty, waiting for a ruler who can silence the noise."
+    },
+    "5": {
+      "key": ["The Maw", "Abyss", "Geographic Feature"],
+      "content": "At the center of Underland lies The Maw — a wound in reality that devours all that falls into it. It is said the Maw leads to the Surface, but none who enter return to confirm. The edges are guarded by the Silent Ones, entities that exist in the space between heartbeats. Approaching the Maw triggers an Endurance check; the pressure of non-existence crushes weak wills."
+    },
+    "6": {
+      "key": ["The Ferryman", "NPC", "Guide"],
+      "content": "A tall, gaunt figure in a coat stitched from shadow. He operates the only reliable passage between districts — a skiff that sails on currents of forgotten intent. His price is always a memory, freely given. He knows every secret path but speaks in riddles. An Empathy check reveals his true nature: he was once like you, lost in Underland, who chose to stay and guide others."
+    },
+    "7": {
+      "key": ["The Oracle of Fractured Time", "NPC", "Mystic"],
+      "content": "She exists in three temporal states simultaneously — past, present, and future overlapping like stained glass. Her prophecies are never wrong, but they are never complete. She trades in possibilities. A Rhetoric check may persuade her to reveal a specific future; an Inland Empire check allows you to survive the vision. She resides in the Archive of Unwritten Histories."
+    },
+    "8": {
+      "key": ["The Merchant of Regrets", "NPC", "Vendor"],
+      "content": "A spider-limbed entity who runs the most successful stall in the Bazaar of Whispers. He buys regrets at premium rates and sells them back to those who regret not having them. His ledger is written in a language that shifts when not directly observed. A Logic check detects the pattern; a Savvy check negotiates a fair price. He knows the location of every hidden cache in Underland."
+    },
+    "9": {
+      "key": ["The Warden of the Court", "NPC", "Guardian"],
+      "content": "A towering construct of brass and bone, animated by the concentrated authority of a thousand forgotten judges. It guards the empty throne in the Court of Echoes. Its voice is the sound of gavel strikes. It does not speak — it pronounces. A Physical Instrument check allows one to slip past; a Volition check lets one stand before it without kneeling. It holds the Key of Silence, which can quiet the Court's eternal reverberation."
+    },
+    "10": {
+      "key": ["Memory Vial", "Item", "Consumable"],
+      "content": "A glass vial containing a swirling silver liquid — a distilled memory. When consumed, the drinker experiences the memory as if it were their own. Effects vary: some grant temporary skill bonuses, others reveal hidden lore, some inflict psychological trauma. Found in the Bazaar of Whispers. An Encyclopedia check identifies the memory's origin before drinking."
+    },
+    "11": {
+      "key": ["Blank Codex", "Item", "Tool"],
+      "content": "A book with empty pages that records the reader's thoughts as they think them. In Underland, where thoughts have physical weight, this is both weapon and shield. Writing in it requires a Conceptualization check; the written thoughts become tangible objects that can be thrown, traded, or used to block passages. The Oracle of Fractured Time seeks this item."
+    },
+    "12": {
+      "key": ["Key of Silence", "Item", "Key Item"],
+      "content": "A key forged from the absence of sound — cold iron that hums with anti-resonance. When used in the Court of Echoes, it silences the eternal reverberation, allowing clear thought and true speech for a brief window. Held by the Warden of the Court. Obtaining it requires either combat (Physical Instrument), negotiation (Suggestion), or stealth (Reflexes)."
+    },
+    "13": {
+      "key": ["Composure", "Skill", "Motorics"],
+      "content": "The ability to maintain outward calm regardless of inner turmoil. In Underland, where reality responds to emotion, Composure is survival. High Composure prevents accidental reality shifts and allows clear dialogue options under pressure. Governed by Motorics."
+    },
+    "14": {
+      "key": ["Inland Empire", "Skill", "Psyche"],
+      "content": "The voice of the subconscious, the gut feeling that knows what the mind cannot articulate. In Underland, it manifests as literal whispers from the environment — walls that speak, shadows that advise. High Inland Empire grants access to hidden dialogue paths and prophetic visions. Governed by Psyche."
+    },
+    "15": {
+      "key": ["Logic", "Skill", "Intellect"],
+      "content": "The cold engine of reason. It dissects contradictions, exposes lies, and constructs irrefutable arguments. In a world where belief shapes reality, Logic is the scalpel that separates truth from wishful thinking. High Logic unlocks analytical dialogue options and reveals structural weaknesses in enemies. Governed by Intellect."
+    },
+    "16": {
+      "key": ["Volition", "Skill", "Psyche"],
+      "content": "The fortress of the will. It resists mental intrusion, endures psychic trauma, and forces reality to bend through sheer refusal to break. In Underland, where the environment feeds on doubt, Volition is the shield that keeps the self intact. High Volition grants resistance to fear effects and enables 'push through' actions. Governed by Psyche."
+    }
+  }
+}
