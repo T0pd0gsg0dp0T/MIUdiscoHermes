@@ -20,6 +20,9 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = []
 
+[project.scripts]
+miu-validate = "engine.validate_miu:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
@@ -27,6 +30,7 @@ dev = [
     "black>=24.0",
     "ruff>=0.5",
     "mypy>=1.10",
+    "jsonschema>=4.20",
 ]
 
 [build-system]

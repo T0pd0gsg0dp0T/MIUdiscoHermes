@@ -101,7 +101,12 @@ class TestDataParser(unittest.TestCase):
     def setUp(self):
         # Create a temporary miu.json for testing
         self.test_data = {
-            "metadata": {"title": "Test World", "version": "0.1.0"},
+            "metadata": {
+                "title": "Test World",
+                "version": "0.1.0",
+                "description": "A test world for unit tests",
+                "author": "Test Suite",
+            },
             "entries": {
                 "1": {
                     "key": ["Test Realm", "Starting Area"],
@@ -167,6 +172,309 @@ class TestDataParser(unittest.TestCase):
     def test_get_entity_returns_none_for_missing(self):
         """get_entity returns None for non-existent ID."""
         self.assertIsNone(self.parser.get_entity("999"))
+
+
+class TestDataParserQueries(unittest.TestCase):
+    """Tests for new DataParser query methods and indexes."""
+
+    def setUp(self):
+        # Create a temporary miu.json with varied entry types for testing
+        self.test_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "0.1.0",
+                "description": "A test world for unit tests",
+                "author": "Test Suite",
+            },
+            "entries": {
+                "1": {
+                    "key": ["Test Realm", "Starting Area"],
+                    "content": "A test Realm with Geographic features for Location detection.",
+                },
+                "2": {
+                    "key": ["Test NPC", "NPC", "Character"],
+                    "content": "A regular character without location keywords.",
+                },
+                "3": {
+                    "key": ["Test City", "Geographic Location"],
+                    "content": "A City that should be detected as a location.",
+                },
+                "4": {
+                    "key": ["Logic", "Skill", "Intellect"],
+                    "content": "The cold engine of reason. Governed by Intellect.",
+                },
+                "5": {
+                    "key": ["Volition", "Skill", "Psyche"],
+                    "content": "The fortress of the will. Governed by Psyche.",
+                },
+                "6": {
+                    "key": ["Test Item", "Item", "Consumable"],
+                    "content": "A consumable item for testing.",
+                },
+            },
+        }
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(self.test_data, self.temp_file)
+        self.temp_file.close()
+        self.parser = DataParser(self.temp_file.name)
+
+    def tearDown(self):
+        os.unlink(self.temp_file.name)
+
+    def test_get_by_type_location(self):
+        """get_by_type('location') returns all locations."""
+        locations = self.parser.get_by_type("location")
+        self.assertEqual(len(locations), 2)
+        names = {loc["name"] for loc in locations}
+        self.assertEqual(names, {"Test Realm", "Test City"})
+
+    def test_get_by_type_npc(self):
+        """get_by_type('npc') returns all NPCs."""
+        npcs = self.parser.get_by_type("npc")
+        self.assertEqual(len(npcs), 1)
+        self.assertEqual(npcs[0]["name"], "Test NPC")
+
+    def test_get_by_type_skill(self):
+        """get_by_type('skill') returns all skills."""
+        skills = self.parser.get_by_type("skill")
+        self.assertEqual(len(skills), 2)
+        names = {s["name"] for s in skills}
+        self.assertEqual(names, {"Logic", "Volition"})
+
+    def test_get_by_type_item(self):
+        """get_by_type('item') returns all items."""
+        items = self.parser.get_by_type("item")
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["name"], "Test Item")
+
+    def test_get_by_type_unknown_returns_empty(self):
+        """get_by_type for unknown type returns empty list."""
+        self.assertEqual(self.parser.get_by_type("unknown"), [])
+
+    def test_get_by_tag(self):
+        """get_by_tag returns entries matching the tag."""
+        results = self.parser.get_by_tag("NPC")
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["name"], "Test NPC")
+
+        results = self.parser.get_by_tag("Skill")
+        self.assertEqual(len(results), 2)
+
+        results = self.parser.get_by_tag("Nonexistent")
+        self.assertEqual(results, [])
+
+    def test_get_skills_by_attribute_intellect(self):
+        """get_skills_by_attribute returns skills governed by Intellect."""
+        skills = self.parser.get_skills_by_attribute("Intellect")
+        self.assertEqual(len(skills), 1)
+        self.assertEqual(skills[0]["name"], "Logic")
+
+    def test_get_skills_by_attribute_psyche(self):
+        """get_skills_by_attribute returns skills governed by Psyche."""
+        skills = self.parser.get_skills_by_attribute("Psyche")
+        self.assertEqual(len(skills), 1)
+        self.assertEqual(skills[0]["name"], "Volition")
+
+    def test_get_skills_by_attribute_unknown_returns_empty(self):
+        """get_skills_by_attribute for unknown attribute returns empty list."""
+        self.assertEqual(self.parser.get_skills_by_attribute("Unknown"), [])
+
+    def test_all_location_ids(self):
+        """all_location_ids returns all location UIDs."""
+        ids = self.parser.all_location_ids()
+        self.assertEqual(set(ids), {"1", "3"})
+
+    def test_all_entity_ids(self):
+        """all_entity_ids returns all entity UIDs."""
+        ids = self.parser.all_entity_ids()
+        self.assertEqual(set(ids), {"2", "4", "5", "6"})
+
+    def test_get_types(self):
+        """get_types returns all indexed types."""
+        types = self.parser.get_types()
+        self.assertIn("location", types)
+        self.assertIn("npc", types)
+        self.assertIn("skill", types)
+        self.assertIn("item", types)
+
+    def test_get_tags(self):
+        """get_tags returns all indexed tags."""
+        tags = self.parser.get_tags()
+        self.assertIn("NPC", tags)
+        self.assertIn("Skill", tags)
+        self.assertIn("Intellect", tags)
+        self.assertIn("Psyche", tags)
+        self.assertIn("Item", tags)
+
+
+class TestDataParserSchemaValidation(unittest.TestCase):
+    """Tests for DataParser JSON Schema validation."""
+
+    def test_valid_data_passes_validation(self):
+        """Valid data according to schema should pass validation."""
+        from engine.parser import DataParser
+
+        valid_data = {
+            "metadata": {
+                "title": "Valid World",
+                "version": "1.0.0",
+                "description": "A valid test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test Location", "Realm"], "content": "Valid content."}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(valid_data, temp_file)
+        temp_file.close()
+        try:
+            parser = DataParser(temp_file.name)
+            # Should not raise
+            self.assertIsNotNone(parser.data)
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_missing_metadata_description_fails_validation(self):
+        """Missing required metadata.description should fail validation."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "author": "Test Author",
+                # missing description
+            },
+            "entries": {"1": {"key": ["Test"], "content": "Content"}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_invalid_version_format_fails_validation(self):
+        """Invalid version format should fail validation."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "not-a-version",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test"], "content": "Content"}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_missing_entry_key_fails_validation(self):
+        """Entry missing required 'key' field should fail validation."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {
+                "1": {
+                    "content": "Content only"
+                    # missing key
+                }
+            },
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_empty_key_array_fails_validation(self):
+        """Entry with empty key array should fail validation (minItems: 1)."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": [], "content": "Content"}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_empty_content_fails_validation(self):
+        """Entry with empty content string should fail validation (minLength: 1)."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test"], "content": ""}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_additional_properties_rejected(self):
+        """Extra properties in entries should fail validation (additionalProperties: false)."""
+        from engine.parser import DataParser, DataParserError
+
+        invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test"], "content": "Content", "extra_field": "not allowed"}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(invalid_data, temp_file)
+        temp_file.close()
+        try:
+            with self.assertRaises(DataParserError) as cm:
+                DataParser(temp_file.name)
+            self.assertIn("schema", str(cm.exception).lower())
+        finally:
+            os.unlink(temp_file.name)
 
 
 class TestDataParserErrorHandling(unittest.TestCase):
@@ -411,6 +719,102 @@ class TestGameEngineIntegration(unittest.TestCase):
         self.assertIsInstance(success, bool)
         self.assertIsInstance(total, int)
         self.assertGreaterEqual(total, 2)  # min: roll(2) + skill(2) + attr(3) = 7
+
+
+class TestValidateMiu(unittest.TestCase):
+    """Tests for the validate_miu CLI module."""
+
+    def setUp(self):
+        # Valid test data
+        self.valid_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {
+                "1": {"key": ["Test Realm", "Location"], "content": "Valid content."}
+            },
+        }
+        # Invalid test data (missing required metadata.description)
+        self.invalid_data = {
+            "metadata": {
+                "title": "Invalid World",
+                "version": "1.0.0",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test"], "content": "Content"}},
+        }
+        self.valid_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(self.valid_data, self.valid_file)
+        self.valid_file.close()
+        self.invalid_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(self.invalid_data, self.invalid_file)
+        self.invalid_file.close()
+        self.corrupt_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        self.corrupt_file.write("{ invalid json }")
+        self.corrupt_file.close()
+
+    def tearDown(self):
+        for f in (self.valid_file, self.invalid_file, self.corrupt_file):
+            try:
+                os.unlink(f.name)
+            except OSError:
+                pass
+
+    def test_valid_file_returns_zero(self):
+        """Valid miu.json should return exit code 0."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", self.valid_file.name]
+        self.assertEqual(main(), 0)
+
+    def test_valid_file_with_stats_returns_zero(self):
+        """Valid file with --stats should return exit code 0."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", self.valid_file.name, "--stats"]
+        self.assertEqual(main(), 0)
+
+    def test_valid_file_quiet_returns_zero(self):
+        """Valid file with --quiet should return exit code 0."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", self.valid_file.name, "--quiet"]
+        self.assertEqual(main(), 0)
+
+    def test_missing_file_returns_one(self):
+        """Missing file should return exit code 1."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", "/nonexistent/file.json"]
+        self.assertEqual(main(), 1)
+
+    def test_corrupt_json_returns_one(self):
+        """Corrupted JSON should return exit code 1."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", self.corrupt_file.name]
+        self.assertEqual(main(), 1)
+
+    def test_schema_validation_failure_returns_one(self):
+        """Data failing schema validation should return exit code 1."""
+        import sys
+
+        from engine.validate_miu import main
+        sys.argv = ["miu-validate", self.invalid_file.name]
+        self.assertEqual(main(), 1)
+
+    def test_main_function_exists(self):
+        """main function should be importable and callable."""
+        from engine.validate_miu import main
+        self.assertTrue(callable(main))
 
 
 if __name__ == "__main__":

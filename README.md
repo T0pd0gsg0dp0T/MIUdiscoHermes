@@ -26,6 +26,9 @@ pip install -e .[dev]
 # Run tests
 pytest
 
+# Validate world data against schema
+miu-validate --stats
+
 # Run the game
 python main.py
 ```

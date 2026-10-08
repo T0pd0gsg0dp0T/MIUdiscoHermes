@@ -13,7 +13,7 @@ class GameEngine:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             data_path = os.path.join(base_dir, "miu.json")
         self.parser: DataParser = DataParser(data_path)
-        self.skills: SkillSystem = SkillSystem()
+        self.skills: SkillSystem = SkillSystem(self.parser)
         self.current_location_id: str = "1"  # Start at Underland
         self.player_state: dict[str, Any] = {"inventory": [], "flags": {}}
         print("Engine initialized with World Data and Skill System.")
