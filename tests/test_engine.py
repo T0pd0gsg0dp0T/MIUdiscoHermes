@@ -95,6 +95,102 @@ class TestSkillSystem(unittest.TestCase):
         self.assertEqual(self.skills.get_skill_value("Unknown"), 0)
 
 
+class TestSkillSystemFromParser(unittest.TestCase):
+    """Tests for SkillSystem._load_from_parser method."""
+
+    def setUp(self):
+        # Create a temporary miu.json with skill entries for testing
+        self.test_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "0.1.0",
+                "description": "A test world for unit tests",
+                "author": "Test Suite",
+            },
+            "entries": {
+                "1": {
+                    "key": ["New Skill", "Skill", "Intellect"],
+                    "content": "A new skill governed by Intellect.",
+                },
+                "2": {
+                    "key": ["Another Skill", "Skill", "Psyche"],
+                    "content": "A new skill governed by Psyche.",
+                },
+                "3": {
+                    "key": [
+                        "Logic",
+                        "Skill",
+                        "Psyche",
+                    ],  # Logic normally Intellect, but here Psyche
+                    "content": "Logic skill with different attribute in world data.",
+                },
+            },
+        }
+        self.temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(self.test_data, self.temp_file)
+        self.temp_file.close()
+        self.parser = DataParser(self.temp_file.name)
+
+    def tearDown(self):
+        os.unlink(self.temp_file.name)
+
+    def test_load_new_skills_from_parser(self):
+        """New skills from parser should be added with default value."""
+        skills = SkillSystem(self.parser)
+        self.assertIn("New Skill", skills.skills)
+        self.assertEqual(skills.skills["New Skill"], 2)
+        self.assertIn("Another Skill", skills.skills)
+        self.assertEqual(skills.skills["Another Skill"], 2)
+
+    def test_new_skills_assigned_to_correct_attribute_group(self):
+        """New skills should be placed in the correct attribute group."""
+        skills = SkillSystem(self.parser)
+        self.assertIn("New Skill", skills.skill_groups["Intellect"])
+        self.assertIn("Another Skill", skills.skill_groups["Psyche"])
+
+    def test_existing_skill_moved_to_new_attribute_group(self):
+        """Existing skill should be moved to attribute group from parser."""
+        skills = SkillSystem(self.parser)
+        # Logic is normally in Intellect group, but parser says Psyche
+        self.assertNotIn("Logic", skills.skill_groups["Intellect"])
+        self.assertIn("Logic", skills.skill_groups["Psyche"])
+
+    def test_existing_skill_not_duplicated(self):
+        """Existing skill should not be duplicated when loaded from parser."""
+        skills = SkillSystem(self.parser)
+        # Logic should only appear once across all groups
+        total_logic_count = sum(1 for group in skills.skill_groups.values() if "Logic" in group)
+        self.assertEqual(total_logic_count, 1)
+
+    def test_skill_without_attribute_in_parser_keeps_default_group(self):
+        """Skill without attribute tag should keep its default group."""
+        test_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "0.1.0",
+                "description": "A test world",
+                "author": "Test Suite",
+            },
+            "entries": {
+                "1": {
+                    "key": ["Untagged Skill", "Skill"],
+                    "content": "A skill with no attribute tag.",
+                },
+            },
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(test_data, temp_file)
+        temp_file.close()
+        try:
+            parser = DataParser(temp_file.name)
+            skills = SkillSystem(parser)
+            # Should not be in any attribute group since no attribute tag
+            for group in skills.skill_groups.values():
+                self.assertNotIn("Untagged Skill", group)
+        finally:
+            os.unlink(temp_file.name)
+
+
 class TestDataParser(unittest.TestCase):
     """Tests for the DataParser class."""
 
@@ -477,6 +573,77 @@ class TestDataParserSchemaValidation(unittest.TestCase):
             os.unlink(temp_file.name)
 
 
+class TestDataParserSchemaWarnings(unittest.TestCase):
+    """Tests for DataParser schema validation warning paths."""
+
+    def test_missing_schema_file_logs_warning(self):
+        """Parser should log warning and continue when schema file is missing."""
+        from engine.parser import DataParser
+
+        valid_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test Realm", "Location"], "content": "Valid content."}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(valid_data, temp_file)
+        temp_file.close()
+        try:
+            # Patch open to raise FileNotFoundError for schema file
+            original_open = open
+
+            def mock_open(path, *args, **kwargs):
+                if "miu_schema.json" in str(path):
+                    raise FileNotFoundError("Schema not found")
+                return original_open(path, *args, **kwargs)
+
+            with patch("builtins.open", side_effect=mock_open):
+                parser = DataParser(temp_file.name)
+                # Should not raise, just log warning
+                self.assertIsNotNone(parser.data)
+        finally:
+            os.unlink(temp_file.name)
+
+    def test_invalid_schema_json_logs_warning(self):
+        """Parser should log warning and continue when schema JSON is invalid."""
+        from engine.parser import DataParser
+
+        valid_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test Realm", "Location"], "content": "Valid content."}},
+        }
+        temp_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(valid_data, temp_file)
+        temp_file.close()
+        try:
+            # Patch open to return invalid JSON for schema file
+            original_open = open
+
+            def mock_open(path, *args, **kwargs):
+                if "miu_schema.json" in str(path):
+                    # Return a file-like object with invalid JSON
+                    from io import StringIO
+
+                    return StringIO("{ invalid json }")
+                return original_open(path, *args, **kwargs)
+
+            with patch("builtins.open", side_effect=mock_open):
+                parser = DataParser(temp_file.name)
+                # Should not raise, just log warning
+                self.assertIsNotNone(parser.data)
+        finally:
+            os.unlink(temp_file.name)
+
+
 class TestDataParserErrorHandling(unittest.TestCase):
     """Tests for DataParser error handling."""
 
@@ -733,9 +900,7 @@ class TestValidateMiu(unittest.TestCase):
                 "description": "A test world",
                 "author": "Test Author",
             },
-            "entries": {
-                "1": {"key": ["Test Realm", "Location"], "content": "Valid content."}
-            },
+            "entries": {"1": {"key": ["Test Realm", "Location"], "content": "Valid content."}},
         }
         # Invalid test data (missing required metadata.description)
         self.invalid_data = {
@@ -768,6 +933,7 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", self.valid_file.name]
         self.assertEqual(main(), 0)
 
@@ -776,6 +942,7 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", self.valid_file.name, "--stats"]
         self.assertEqual(main(), 0)
 
@@ -784,6 +951,7 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", self.valid_file.name, "--quiet"]
         self.assertEqual(main(), 0)
 
@@ -792,6 +960,7 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", "/nonexistent/file.json"]
         self.assertEqual(main(), 1)
 
@@ -800,6 +969,7 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", self.corrupt_file.name]
         self.assertEqual(main(), 1)
 
@@ -808,12 +978,62 @@ class TestValidateMiu(unittest.TestCase):
         import sys
 
         from engine.validate_miu import main
+
         sys.argv = ["miu-validate", self.invalid_file.name]
         self.assertEqual(main(), 1)
+
+    def test_unexpected_exception_returns_one(self):
+        """Unexpected exceptions during parsing should return exit code 1."""
+        import sys
+        from unittest.mock import patch
+
+        from engine.validate_miu import main
+
+        # Mock DataParser to raise a generic exception
+        with patch("engine.validate_miu.DataParser", side_effect=RuntimeError("Unexpected error")):
+            sys.argv = ["miu-validate", self.valid_file.name]
+            self.assertEqual(main(), 1)
+
+    def test_stats_with_no_skills_for_attribute(self):
+        """Stats should handle attributes with no skills gracefully."""
+        import sys
+        from io import StringIO
+
+        from engine.validate_miu import main
+
+        # Valid data with no skills at all
+        no_skill_data = {
+            "metadata": {
+                "title": "Test World",
+                "version": "1.0.0",
+                "description": "A test world",
+                "author": "Test Author",
+            },
+            "entries": {"1": {"key": ["Test Realm", "Location"], "content": "Valid content."}},
+        }
+        no_skill_file = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False)
+        json.dump(no_skill_data, no_skill_file)
+        no_skill_file.close()
+        try:
+            sys.argv = ["miu-validate", no_skill_file.name, "--stats"]
+            # Capture stdout
+            old_stdout = sys.stdout
+            sys.stdout = StringIO()
+            try:
+                self.assertEqual(main(), 0)
+                output = sys.stdout.getvalue()
+                # Should not crash, just not print skills for attributes with none
+                self.assertIn("Locations: 1", output)
+                self.assertIn("Entities: 0", output)
+            finally:
+                sys.stdout = old_stdout
+        finally:
+            os.unlink(no_skill_file.name)
 
     def test_main_function_exists(self):
         """main function should be importable and callable."""
         from engine.validate_miu import main
+
         self.assertTrue(callable(main))
 
 
